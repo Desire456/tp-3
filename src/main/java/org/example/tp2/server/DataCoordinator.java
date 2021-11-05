@@ -37,7 +37,7 @@ public class DataCoordinator {
     }
 
     public State getState(int clientNumber) {
-        if (getIterationsCount() / 4 ==  ServerApplication.FULL_ITERATIONS_COUNT) {
+        if (getIterationsCount() / 4 == ServerApplication.FULL_ITERATIONS_COUNT) {
             return State.EXIT;
         }
         if (getIterationsCount() % 4 == clientNumber - 1) {
