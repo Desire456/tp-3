@@ -14,9 +14,80 @@
 
 # Описание алгоритма
 
-Сервер ждет подключения клиенов. Когда хотя бы один клиент подключается, игра начинается. У каждого клиента есть свой
-номер, так мы определяем очередь. Далее есть 3 состояния: WORK, WAIT, EXIT. Если WAIT то засыпаем на 3 секунды и узнаем
-состояние, и так пока не WORK или EXIT. С WORK думаю все понятно. Если кол-во итераций подошло к концу то будет EXIT.
-Когда кол-во итераций подошло к концу отправляем клиентам EXIT и следующим сообщением все стихотворение. Готово.
+Была добавлена возможность сохранения истории игр. Если клиент
+хочет получить историю ему нужно отправить сообщение "GET_STATE".
+Перед завершением сервер валидирует историю игр по schema.json и
+сохраняет. Если что-то не так то остается предыдущая история.
 
+schema.json:
+```json
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "state": {
+      "type": "array",
+      "items": [
+        {
+          "type": "object",
+          "properties": {
+            "answer": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "answer"
+          ]
+        }
+      ]
+    }
+  },
+  "required": [
+    "state"
+  ]
+}
+```
 
+Валидатор:
+```java
+public class JsonSchemaValidator {
+
+    private Schema schema;
+
+    public JsonSchemaValidator() {
+        try (FileInputStream inputStream = new FileInputStream(ServerApplication.JSON_SCHEMA_FILE_PATH)) {
+            JSONObject rawSchema = new JSONObject(new JSONTokener(Objects.requireNonNull(inputStream)));
+            this.schema = SchemaLoader.load(rawSchema);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public boolean validate(String jsonObject) {
+        try {
+            schema.validate(new JSONObject(jsonObject));
+            return true;
+        } catch (ValidationException e) {
+            return false;
+        }
+    }
+}
+```
+
+Код сохранения и валидации данных:
+```java
+public boolean saveState() {
+        String jsonState = gson.toJson(persistentState);
+        JsonSchemaValidator validator = new JsonSchemaValidator();
+        if (validator.validate(jsonState)) {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(file, false))) {
+                writer.write(jsonState);
+                writer.flush();
+                return true;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return false;
+    }
+```
