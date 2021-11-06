@@ -1,7 +1,7 @@
-package org.example.tp2.client;
+package org.example.tp3.client;
 
 import com.google.gson.Gson;
-import org.example.tp2.Message;
+import org.example.tp3.Message;
 
 import java.io.*;
 import java.net.Socket;

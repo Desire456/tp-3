@@ -1,4 +1,4 @@
-package org.example.tp2.client;
+package org.example.tp3.client;
 
 public class ClientApplication {
     public static void main(String[] args) {

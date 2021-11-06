@@ -1,7 +1,7 @@
-package org.example.tp2.server;
+package org.example.tp3.server;
 
 import com.google.gson.Gson;
-import org.example.tp2.Message;
+import org.example.tp3.Message;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;

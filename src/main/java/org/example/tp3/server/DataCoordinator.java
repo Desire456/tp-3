@@ -1,6 +1,6 @@
-package org.example.tp2.server;
+package org.example.tp3.server;
 
-import org.example.tp2.Message;
+import org.example.tp3.Message;
 
 import java.util.ArrayList;
 import java.util.List;

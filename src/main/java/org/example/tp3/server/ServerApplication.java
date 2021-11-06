@@ -1,4 +1,4 @@
-package org.example.tp2.server;
+package org.example.tp3.server;
 
 public class ServerApplication {
     public static final int FULL_ITERATIONS_COUNT = 2;

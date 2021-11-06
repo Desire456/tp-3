@@ -1,4 +1,4 @@
-package org.example.tp2;
+package org.example.tp3;
 
 public class Message {
     private String content;
