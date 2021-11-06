@@ -1,6 +1,7 @@
 package org.example.tp3.server;
 
 import com.google.gson.Gson;
+import org.example.tp3.IOUtils;
 import org.example.tp3.Message;
 
 import java.io.DataInputStream;
@@ -16,11 +17,14 @@ public class ClientHandler implements Runnable {
     private final DataCoordinator dataCoordinator;
     private final Socket clientSocket;
     private final int clientNumber;
+    private final PersistentStateHandler persistentStateHandler;
 
-    public ClientHandler(DataCoordinator dataCoordinator, Socket clientSocket, int clientNumber) {
+    public ClientHandler(DataCoordinator dataCoordinator, Socket clientSocket, int clientNumber,
+                         PersistentStateHandler persistentStateHandler) {
         this.dataCoordinator = dataCoordinator;
         this.clientSocket = clientSocket;
         this.clientNumber = clientNumber;
+        this.persistentStateHandler = persistentStateHandler;
     }
 
     @Override
@@ -32,20 +36,21 @@ public class ClientHandler implements Runnable {
             while (!exit) {
                 switch (dataCoordinator.getState(clientNumber)) {
                     case WORK: {
-                        Message message = new Message(
-                                Optional.ofNullable(dataCoordinator.getLastMessage())
-                                        .map(Message::getContent)
-                                        .orElse("-")
-                        );
-                        String clientMessageJson = gson.toJson(message);
-                        outputStream.writeUTF(clientMessageJson);
-                        System.out.println("Send message to client: " + message.getContent());
+                        String content = Optional.ofNullable(dataCoordinator.getLastMessage())
+                                .map(Message::getContent)
+                                .orElse("-");
+                        IOUtils.sendMessage(content, outputStream, IOUtils.CLIENT_NAME);
 
-                        String serverMessageJson = inputStream.readUTF();
-                        Message serverMessage = gson.fromJson(serverMessageJson, Message.class);
-                        dataCoordinator.addMessage(serverMessage);
-                        System.out.println("Get message from client " + clientNumber + " : " + serverMessageJson);
-                        dataCoordinator.incrementIterationsCount();
+                        Message serverMessage = IOUtils.readMessage(inputStream, IOUtils.CLIENT_NAME);
+                        if (serverMessage.getContent().equals(IOUtils.GET_STATE_COMMAND)) {
+                            IOUtils.sendMessage(persistentStateHandler.getPersistentStateJson(), outputStream,
+                                    IOUtils.CLIENT_NAME);
+                        } else {
+                            dataCoordinator.addMessage(serverMessage);
+                            System.out.println("Get message from client " + clientNumber + ": " +
+                                    serverMessage.getContent());
+                            dataCoordinator.incrementIterationsCount();
+                        }
                         break;
                     }
                     case WAIT: {
@@ -53,8 +58,8 @@ public class ClientHandler implements Runnable {
                         break;
                     }
                     case EXIT: {
-                        sendMessage("EXIT", outputStream);
-                        sendMessage(dataCoordinator.getAnswer(), outputStream);
+                        IOUtils.sendMessage("EXIT", outputStream, IOUtils.CLIENT_NAME);
+                        IOUtils.sendMessage(dataCoordinator.getAnswer(), outputStream, IOUtils.CLIENT_NAME);
                         exit = true;
                         break;
                     }
@@ -70,12 +75,4 @@ public class ClientHandler implements Runnable {
             }
         }
     }
-
-    private void sendMessage(String content, DataOutputStream outputStream) throws IOException {
-        Message message = new Message(content);
-        String clientMessageJson = gson.toJson(message);
-        outputStream.writeUTF(clientMessageJson);
-        System.out.println("Send message to client: " + clientMessageJson);
-    }
-
 }

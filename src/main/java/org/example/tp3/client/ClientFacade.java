@@ -1,9 +1,14 @@
 package org.example.tp3.client;
 
 import com.google.gson.Gson;
+import org.example.tp3.IOUtils;
 import org.example.tp3.Message;
+import org.example.tp3.PersistentState;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.InputStreamReader;
 import java.net.Socket;
 
 public class ClientFacade {
@@ -17,9 +22,9 @@ public class ClientFacade {
              BufferedReader consoleReader = new BufferedReader(new InputStreamReader(System.in))) {
             System.out.println("Client connected to server");
             while (true) {
-                Message message = readMessage(inputStream);
+                Message message = IOUtils.readMessage(inputStream, IOUtils.SERVER_NAME);
                 if (message.getContent().equals("EXIT")) {
-                    Message answer = readMessage(inputStream);
+                    Message answer = IOUtils.readMessage(inputStream, IOUtils.SERVER_NAME);
                     System.out.println("The answer: \n" + answer.getContent());
                     System.out.println("Client close the connection");
                     break;
@@ -29,19 +34,16 @@ public class ClientFacade {
                 }
                 System.out.print("Write the line to server: ");
                 String lineToSend = consoleReader.readLine();
-                Message serverMessage = new Message(lineToSend);
-                String serverMessageJson = gson.toJson(serverMessage);
-                outputStream.writeUTF(serverMessageJson);
-                System.out.println("Send message to server: " + serverMessageJson);
+                IOUtils.sendMessage(lineToSend, outputStream, IOUtils.SERVER_NAME);
+
+                if (lineToSend.equals(IOUtils.GET_STATE_COMMAND)) {
+                    Message messageState = IOUtils.readMessage(inputStream, IOUtils.SERVER_NAME);
+                    PersistentState persistentState = gson.fromJson(messageState.getContent(), PersistentState.class);
+                    System.out.println("State: \n" + persistentState.toString());
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    private Message readMessage(DataInputStream inputStream) throws IOException {
-        String messageJson = inputStream.readUTF();
-        System.out.println("Get message from server: " + messageJson);
-        return gson.fromJson(messageJson, Message.class);
     }
 }
